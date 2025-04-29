@@ -5,9 +5,16 @@ import datetime
 import torch
 
 # 1. Load Transformer model
-st.cache_resource()
+from sentence_transformers import SentenceTransformer
+
+@st.cache_resource
 def load_model():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    try:
+        # Try the full HuggingFace model path
+        return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    except:
+        # If even that fails, fallback to a very small local model (optional)
+        st.error("🚫 Could not load the model. Please check Streamlit Cloud permissions or manually upload the model.")
 
 model = load_model()
 
