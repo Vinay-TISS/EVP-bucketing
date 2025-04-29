@@ -1,33 +1,19 @@
+# --- 0. Set Page First ---
 import streamlit as st
 st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
 
+# --- 1. Import Required Libraries ---
 import os
 import zipfile
 import gdown
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
+from bertopic import BERTopic
+import datetime
+import torch
 
-# Your Google Drive File ID here
-GDRIVE_FILE_ID = "import streamlit as st
-st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
+# --- 2. Download Model from Google Drive if not exists ---
+GDRIVE_FILE_ID = "1jaPA1xwQuHaiOmX3uYUx7jqN52DcuSXY"  # ✅ Replace with your correct GDrive File ID
 
-import os
-import zipfile
-import gdown
-from sentence_transformers import SentenceTransformer
-
-# Your Google Drive File ID here
-GDRIVE_FILE_ID = "import streamlit as st
-st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
-
-import os
-import zipfile
-import gdown
-from sentence_transformers import SentenceTransformer
-
-# Your Google Drive File ID here
-GDRIVE_FILE_ID = "1jaPA1xwQuHaiOmX3uYUx7jqN52DcuSXY"  # ⬅️ Replace with your ID
-
-# Function to download and unzip model
 def download_model_from_drive():
     if not os.path.exists("local_model"):
         zip_path = "local_model.zip"
@@ -38,56 +24,16 @@ def download_model_from_drive():
             zip_ref.extractall("local_model")
         os.remove(zip_path)
 
-# Run download function before loading model
 download_model_from_drive()
 
-@st.cache_resource
-def load_model():
-    return SentenceTransformer('./local_model/')
-
-model = load_model()"  # ⬅️ Replace with your ID
-
-# Function to download and unzip model
-def download_model_from_drive():
-    if not os.path.exists("local_model"):
-        zip_path = "local_model.zip"
-        url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
-        gdown.download(url, zip_path, quiet=False)
-        
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall("local_model")
-        os.remove(zip_path)
-
-# Run download function before loading model
-download_model_from_drive()
-
-@st.cache_resource
-def load_model():
-    return SentenceTransformer('./local_model/')
-
-model = load_model()"  # ⬅️ Replace with your ID
-
-# Function to download and unzip model
-def download_model_from_drive():
-    if not os.path.exists("local_model"):
-        zip_path = "local_model.zip"
-        url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
-        gdown.download(url, zip_path, quiet=False)
-        
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall("local_model")
-        os.remove(zip_path)
-
-# Run download function before loading model
-download_model_from_drive()
-
+# --- 3. Load Transformer Model ---
 @st.cache_resource
 def load_model():
     return SentenceTransformer('./local_model/')
 
 model = load_model()
 
-# 2. Define EVP Pillars
+# --- 4. Define EVP Pillars ---
 pillars = {
     "Health & Wellbeing": "supporting physical, mental, emotional, and social health",
     "Financial Security & Benefits": "financial stability, savings, compensation, and insurance",
@@ -107,7 +53,7 @@ pillar_names = list(pillars.keys())
 pillar_texts = list(pillars.values())
 pillar_embeddings = model.encode(pillar_texts, convert_to_tensor=True)
 
-# 3. Streamlit UI
+# --- 5. Streamlit User Interface ---
 st.title("💡 EVP Bucketing Tool")
 st.markdown("**Step 1:** Paste employee comments below (one per line). Then press 'Generate EVP Themes'.")
 
@@ -123,7 +69,7 @@ if submitted:
         results = []
         emerging_texts = []
 
-        # Match each comment to EVP or mark as EMERGING
+        # --- 6. Match Comments ---
         for comment in comments:
             comment_embedding = model.encode(comment, convert_to_tensor=True)
             similarities = util.cos_sim(comment_embedding, pillar_embeddings)
@@ -137,7 +83,7 @@ if submitted:
                 results.append((comment, "EMERGING"))
                 emerging_texts.append(comment)
 
-        # 4. Run BERTopic if enough emerging themes
+        # --- 7. BERTopic for Emerging Themes ---
         if len(emerging_texts) >= 3:
             topic_model = BERTopic(verbose=False)
             topics, _ = topic_model.fit_transform(emerging_texts)
@@ -147,7 +93,7 @@ if submitted:
                     topic_index = topics.pop(0)
                     topic_words = topic_model.get_topic(topic_index)
                     if topic_words and isinstance(topic_words, list):
-                        new_theme = topic_words[0][0]  # Top word
+                        new_theme = topic_words[0][0]  # Top keyword
                         results[i] = (comment, f"EMERGING THEME: {new_theme}")
                     else:
                         results[i] = (comment, "UNKNOWN")
@@ -156,18 +102,17 @@ if submitted:
                 if pillar == "EMERGING":
                     results[i] = (comment, "UNKNOWN")  # Fallback label
 
-        # 5. Show Results
+        # --- 8. Display Results ---
         st.write("### 🔍 EVP Theme Mapping Results")
         for comment, theme in results:
             st.markdown(f"**📝 {comment}** → _{theme}_")
 
-        # 6. Save to TXT file
+        # --- 9. Save and Download Results ---
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"evp_bucketing_output_{timestamp}.txt"
         with open(filename, "w", encoding="utf-8") as f:
             for comment, theme in results:
                 f.write(f"Comment: {comment}\nAssigned Theme: {theme}\n{'-'*50}\n")
 
-        # 7. Download button
         with open(filename, "rb") as f:
             st.download_button("📥 Download Result as TXT", f, file_name=filename, mime="text/plain")
