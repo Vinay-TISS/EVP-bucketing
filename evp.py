@@ -102,7 +102,7 @@ if submitted:
             matched_pillars = []
 
             for i, similarity_score in enumerate(similarities[0]):
-                if similarity_score.item() > 0.45  # Threshold for multi-matching
+                if similarity_score.item() > 0.45:  # Threshold for multi-matching
                     matched_pillars.append(pillar_names[i])
 
             if matched_pillars:
