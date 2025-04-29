@@ -13,7 +13,7 @@ import torch
 import random
 
 # --- 2. Download Model from Google Drive if not exists ---
-GDRIVE_FILE_ID = "1aWgld6R_psxnHZOOKInZRevplZUP8n4Z"  # ✅ Your Google Drive file ID
+GDRIVE_FILE_ID = "1aWgld6R_psxnHZOOKInZRevplZUP8n4Z"  # ✅ Your correct Google Drive File ID
 
 def download_model_from_drive():
     if not os.path.exists("local_model"):
@@ -66,7 +66,7 @@ pillar_names = list(pillars.keys())
 pillar_texts = list(pillars.values())
 pillar_embeddings = model.encode(pillar_texts, convert_to_tensor=True)
 
-# --- 5. Define New Emerging EVP Themes ---
+# --- 5. Define Final Clean New Emerging EVP Themes ---
 new_evp_theme_list = [
     "Future-Readiness and Agility",
     "Technology-Enabled Work Identity",
@@ -79,7 +79,7 @@ new_evp_theme_list = [
 ]
 
 # --- 6. Streamlit User Interface ---
-st.title("💡 EVP Bucketing Tool - Professional Version")
+st.title("💡 EVP Bucketing Tool - Multi-Pillar Professional Version")
 st.markdown("**Step 1:** Paste employee comments below (one per line). Then press 'Generate EVP Themes'.")
 
 with st.form("evp_form"):
@@ -95,16 +95,18 @@ if submitted:
         emerging_texts = []
         emerging_indices = []
 
-        # --- 7. Match Comments ---
+        # --- 7. Match Comments to Multiple Pillars ---
         for idx, comment in enumerate(comments):
             comment_embedding = model.encode(comment, convert_to_tensor=True)
             similarities = util.cos_sim(comment_embedding, pillar_embeddings)
-            best_pillar_idx = similarities.argmax().item()
-            best_pillar = pillar_names[best_pillar_idx]
-            confidence = similarities[0][best_pillar_idx].item()
+            matched_pillars = []
 
-            if confidence > 0.2:
-                results.append((comment, best_pillar))
+            for i, similarity_score in enumerate(similarities[0]):
+                if similarity_score.item() > 0.2:  # Threshold for multi-matching
+                    matched_pillars.append(pillar_names[i])
+
+            if matched_pillars:
+                results.append((comment, matched_pillars))
             else:
                 results.append((comment, "EMERGING"))
                 emerging_texts.append(comment)
@@ -121,32 +123,40 @@ if submitted:
                     if idx < len(new_evp_theme_list):
                         mapped_theme = new_evp_theme_list[idx]
                     else:
-                        mapped_theme = random.choice(new_evp_theme_list)  # Fallback random if too many themes
+                        mapped_theme = random.choice(new_evp_theme_list)
                     topic_mapping[idx] = f"NEW EVP: {mapped_theme}"
 
                 # Update Results
-                for idx, (comment, pillar) in enumerate(results):
-                    if pillar == "EMERGING":
-                        results[idx] = (comment, topic_mapping.get(emerging_indices.pop(0), "NEW EVP: Future-Readiness and Agility"))
+                for idx, (comment, themes) in enumerate(results):
+                    if themes == "EMERGING":
+                        results[idx] = (comment, [topic_mapping.get(emerging_indices.pop(0), "NEW EVP: Future-Readiness and Agility")])
 
             except Exception as e:
-                # If BERTopic crashes, fallback
-                for idx, (comment, pillar) in enumerate(results):
-                    if pillar == "EMERGING":
+                # If BERTopic crashes
+                for idx, (comment, themes) in enumerate(results):
+                    if themes == "EMERGING":
                         fallback_theme = random.choice(new_evp_theme_list)
-                        results[idx] = (comment, f"NEW EVP: {fallback_theme}")
+                        results[idx] = (comment, [f"NEW EVP: {fallback_theme}"])
 
         # --- 9. Display Results ---
         st.write("### 🔍 Final EVP Theme Mapping Results")
-        for comment, theme in results:
-            st.markdown(f"**📝 {comment}** → _{theme}_")
+        for comment, themes in results:
+            if isinstance(themes, list):
+                pillar_display = ", ".join(themes)
+                st.markdown(f"**📝 {comment}** → _{pillar_display}_")
+            else:
+                st.markdown(f"**📝 {comment}** → _{themes}_")
 
         # --- 10. Save and Download Results ---
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"evp_bucketing_output_{timestamp}.txt"
         with open(filename, "w", encoding="utf-8") as f:
-            for comment, theme in results:
-                f.write(f"Comment: {comment}\nAssigned Theme: {theme}\n{'-'*50}\n")
+            for comment, themes in results:
+                if isinstance(themes, list):
+                    pillar_display = ", ".join(themes)
+                    f.write(f"Comment: {comment}\nAssigned Themes: {pillar_display}\n{'-'*50}\n")
+                else:
+                    f.write(f"Comment: {comment}\nAssigned Theme: {themes}\n{'-'*50}\n")
 
         with open(filename, "rb") as f:
             st.download_button("📥 Download Result as TXT", f, file_name=filename, mime="text/plain")
