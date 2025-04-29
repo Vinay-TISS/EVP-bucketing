@@ -103,7 +103,7 @@ if submitted:
             best_pillar = pillar_names[best_pillar_idx]
             confidence = similarities[0][best_pillar_idx].item()
 
-            if confidence > 0.3:
+            if confidence > 0.2:
                 results.append((comment, best_pillar))
             else:
                 results.append((comment, "EMERGING"))
