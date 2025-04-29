@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")  # MUST BE FIRST
+
 from sentence_transformers import SentenceTransformer, util
 from bertopic import BERTopic
 import datetime
@@ -7,7 +9,7 @@ import torch
 # 1. Load Transformer model (small version, safe for GitHub/Streamlit Cloud)
 @st.cache_resource
 def load_model():
-    return SentenceTransformer('paraphrase-MiniLM-L3-v2')  # ✅ Smaller, faster, no upload issues
+    return SentenceTransformer('paraphrase-MiniLM-L3-v2')  # ✅ Smaller, no upload issues
 
 model = load_model()
 
@@ -32,7 +34,6 @@ pillar_texts = list(pillars.values())
 pillar_embeddings = model.encode(pillar_texts, convert_to_tensor=True)
 
 # 3. Streamlit UI
-st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
 st.title("💡 EVP Bucketing Tool")
 st.markdown("**Step 1:** Paste employee comments below (one per line). Then press 'Generate EVP Themes'.")
 
@@ -48,6 +49,7 @@ if submitted:
         results = []
         emerging_texts = []
 
+        # Match each comment to EVP or mark as EMERGING
         for comment in comments:
             comment_embedding = model.encode(comment, convert_to_tensor=True)
             similarities = util.cos_sim(comment_embedding, pillar_embeddings)
@@ -61,38 +63,37 @@ if submitted:
                 results.append((comment, "EMERGING"))
                 emerging_texts.append(comment)
 
-       
-# Run BERTopic only if enough data is available
-if len(emerging_texts) >= 3:
-    topic_model = BERTopic(verbose=False)
-    topics, _ = topic_model.fit_transform(emerging_texts)
+        # 4. Run BERTopic if enough emerging themes
+        if len(emerging_texts) >= 3:
+            topic_model = BERTopic(verbose=False)
+            topics, _ = topic_model.fit_transform(emerging_texts)
 
-    for i, (comment, pillar) in enumerate(results):
-        if pillar == "EMERGING":
-            topic_index = topics.pop(0)
-            topic_words = topic_model.get_topic(topic_index)
-            if topic_words and isinstance(topic_words, list):
-                new_theme = topic_words[0][0]  # Top word
-                results[i] = (comment, f"EMERGING THEME: {new_theme}")
-            else:
-                results[i] = (comment, "UNKNOWN")
-else:
-    for i, (comment, pillar) in enumerate(results):
-        if pillar == "EMERGING":
-            results[i] = (comment, "UNKNOWN")  # Fallback label
+            for i, (comment, pillar) in enumerate(results):
+                if pillar == "EMERGING":
+                    topic_index = topics.pop(0)
+                    topic_words = topic_model.get_topic(topic_index)
+                    if topic_words and isinstance(topic_words, list):
+                        new_theme = topic_words[0][0]  # Top word
+                        results[i] = (comment, f"EMERGING THEME: {new_theme}")
+                    else:
+                        results[i] = (comment, "UNKNOWN")
+        else:
+            for i, (comment, pillar) in enumerate(results):
+                if pillar == "EMERGING":
+                    results[i] = (comment, "UNKNOWN")  # Fallback label
 
-        # Show Results
+        # 5. Show Results
         st.write("### 🔍 EVP Theme Mapping Results")
         for comment, theme in results:
             st.markdown(f"**📝 {comment}** → _{theme}_")
 
-        # Save to .txt
+        # 6. Save to TXT file
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"evp_bucketing_output_{timestamp}.txt"
         with open(filename, "w", encoding="utf-8") as f:
             for comment, theme in results:
                 f.write(f"Comment: {comment}\nAssigned Theme: {theme}\n{'-'*50}\n")
 
-        # Download button
+        # 7. Download button
         with open(filename, "rb") as f:
             st.download_button("📥 Download Result as TXT", f, file_name=filename, mime="text/plain")
