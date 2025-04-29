@@ -12,14 +12,14 @@ import datetime
 import torch
 
 # --- 2. Download Model from Google Drive if not exists ---
-GDRIVE_FILE_ID = "1aWgld6R_psxnHZOOKInZRevplZUP8n4Z"  # ✅ Replace with your correct GDrive File ID
+GDRIVE_FILE_ID = "1aWgld6R_psxnHZOOKInZRevplZUP8n4Z"  # ✅ Your correct Google Drive file ID
 
 def download_model_from_drive():
     if not os.path.exists("local_model"):
         zip_path = "local_model.zip"
         url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
         gdown.download(url, zip_path, quiet=False)
-        
+
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall("local_model")
         os.remove(zip_path)
@@ -84,9 +84,9 @@ if submitted:
                 emerging_texts.append(comment)
 
         # --- 7. BERTopic for Emerging Themes ---
-       if len(emerging_texts) >= 3:
-          topic_model = BERTopic(embedding_model=model, verbose=False)
-          topics, _ = topic_model.fit_transform(emerging_texts)
+        if len(emerging_texts) >= 3:
+            topic_model = BERTopic(embedding_model=model, verbose=False)
+            topics, _ = topic_model.fit_transform(emerging_texts)
 
             for i, (comment, pillar) in enumerate(results):
                 if pillar == "EMERGING":
