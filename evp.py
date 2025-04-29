@@ -22,7 +22,9 @@ def download_model_from_drive():
 
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall("local_model")
-        os.remove(zip_path)
+        
+        if os.path.exists(zip_path):    # ✅ Fix here
+            os.remove(zip_path)
 
 download_model_from_drive()
 
