@@ -4,17 +4,10 @@ from bertopic import BERTopic
 import datetime
 import torch
 
-# 1. Load Transformer model
-from sentence_transformers import SentenceTransformer
-
+# 1. Load Transformer model (small version, safe for GitHub/Streamlit Cloud)
 @st.cache_resource
 def load_model():
-    try:
-        # Try the full HuggingFace model path
-        return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-    except:
-        # If even that fails, fallback to a very small local model (optional)
-        st.error("🚫 Could not load the model. Please check Streamlit Cloud permissions or manually upload the model.")
+    return SentenceTransformer('paraphrase-MiniLM-L3-v2')  # ✅ Smaller, faster, no upload issues
 
 model = load_model()
 
