@@ -1,15 +1,89 @@
 import streamlit as st
-st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")  # MUST BE FIRST
+st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
 
-from sentence_transformers import SentenceTransformer, util
-from bertopic import BERTopic
-import datetime
-import torch
+import os
+import zipfile
+import gdown
+from sentence_transformers import SentenceTransformer
 
-# 1. Load Transformer model (small version, safe for GitHub/Streamlit Cloud)
+# Your Google Drive File ID here
+GDRIVE_FILE_ID = "import streamlit as st
+st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
+
+import os
+import zipfile
+import gdown
+from sentence_transformers import SentenceTransformer
+
+# Your Google Drive File ID here
+GDRIVE_FILE_ID = "import streamlit as st
+st.set_page_config(page_title="EVP Bucketing Tool", layout="centered")
+
+import os
+import zipfile
+import gdown
+from sentence_transformers import SentenceTransformer
+
+# Your Google Drive File ID here
+GDRIVE_FILE_ID = "1jaPA1xwQuHaiOmX3uYUx7jqN52DcuSXY"  # ⬅️ Replace with your ID
+
+# Function to download and unzip model
+def download_model_from_drive():
+    if not os.path.exists("local_model"):
+        zip_path = "local_model.zip"
+        url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+        gdown.download(url, zip_path, quiet=False)
+        
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall("local_model")
+        os.remove(zip_path)
+
+# Run download function before loading model
+download_model_from_drive()
+
 @st.cache_resource
 def load_model():
-    return SentenceTransformer('paraphrase-MiniLM-L3-v2')  # ✅ Smaller, no upload issues
+    return SentenceTransformer('./local_model/')
+
+model = load_model()"  # ⬅️ Replace with your ID
+
+# Function to download and unzip model
+def download_model_from_drive():
+    if not os.path.exists("local_model"):
+        zip_path = "local_model.zip"
+        url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+        gdown.download(url, zip_path, quiet=False)
+        
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall("local_model")
+        os.remove(zip_path)
+
+# Run download function before loading model
+download_model_from_drive()
+
+@st.cache_resource
+def load_model():
+    return SentenceTransformer('./local_model/')
+
+model = load_model()"  # ⬅️ Replace with your ID
+
+# Function to download and unzip model
+def download_model_from_drive():
+    if not os.path.exists("local_model"):
+        zip_path = "local_model.zip"
+        url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+        gdown.download(url, zip_path, quiet=False)
+        
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall("local_model")
+        os.remove(zip_path)
+
+# Run download function before loading model
+download_model_from_drive()
+
+@st.cache_resource
+def load_model():
+    return SentenceTransformer('./local_model/')
 
 model = load_model()
 
