@@ -84,9 +84,9 @@ if submitted:
                 emerging_texts.append(comment)
 
         # --- 7. BERTopic for Emerging Themes ---
-        if len(emerging_texts) >= 3:
-            topic_model = BERTopic(verbose=False)
-            topics, _ = topic_model.fit_transform(emerging_texts)
+       if len(emerging_texts) >= 3:
+          topic_model = BERTopic(embedding_model=model, verbose=False)
+          topics, _ = topic_model.fit_transform(emerging_texts)
 
             for i, (comment, pillar) in enumerate(results):
                 if pillar == "EMERGING":
