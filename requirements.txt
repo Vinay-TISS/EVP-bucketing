@@ -3,3 +3,4 @@ sentence-transformers
 torch
 bertopic
 pandas
+gdown
