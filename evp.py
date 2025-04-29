@@ -12,7 +12,7 @@ import datetime
 import torch
 
 # --- 2. Download Model from Google Drive if not exists ---
-GDRIVE_FILE_ID = "1jaPA1xwQuHaiOmX3uYUx7jqN52DcuSXY"  # ✅ Replace with your correct GDrive File ID
+GDRIVE_FILE_ID = "1aWgld6R_psxnHZOOKInZRevplZUP8n4Z"  # ✅ Replace with your correct GDrive File ID
 
 def download_model_from_drive():
     if not os.path.exists("local_model"):
