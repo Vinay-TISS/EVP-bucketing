@@ -61,20 +61,25 @@ if submitted:
                 results.append((comment, "EMERGING"))
                 emerging_texts.append(comment)
 
-        # Run BERTopic if needed
-        if emerging_texts:
-            topic_model = BERTopic(verbose=False)
-            topics, _ = topic_model.fit_transform(emerging_texts)
+       
+# Run BERTopic only if enough data is available
+if len(emerging_texts) >= 3:
+    topic_model = BERTopic(verbose=False)
+    topics, _ = topic_model.fit_transform(emerging_texts)
 
-            for i, (comment, pillar) in enumerate(results):
-                if pillar == "EMERGING":
-                    topic_index = topics.pop(0)
-                    topic_words = topic_model.get_topic(topic_index)
-                    if topic_words and isinstance(topic_words, list):
-                        new_theme = topic_words[0][0]  # Top word
-                        results[i] = (comment, f"EMERGING THEME: {new_theme}")
-                    else:
-                        results[i] = (comment, "UNKNOWN")
+    for i, (comment, pillar) in enumerate(results):
+        if pillar == "EMERGING":
+            topic_index = topics.pop(0)
+            topic_words = topic_model.get_topic(topic_index)
+            if topic_words and isinstance(topic_words, list):
+                new_theme = topic_words[0][0]  # Top word
+                results[i] = (comment, f"EMERGING THEME: {new_theme}")
+            else:
+                results[i] = (comment, "UNKNOWN")
+else:
+    for i, (comment, pillar) in enumerate(results):
+        if pillar == "EMERGING":
+            results[i] = (comment, "UNKNOWN")  # Fallback label
 
         # Show Results
         st.write("### 🔍 EVP Theme Mapping Results")
