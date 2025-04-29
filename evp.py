@@ -35,7 +35,7 @@ model = load_model()
 
 # --- 4. Define EVP Pillars ---
 pillars = {
-    "Health & Wellbeing": "supporting physical, mental, emotional, and social health",
+    "Health & Wellbeing": "supporting physical, mental, emotional, and social health, happiness, positivity",
     "Financial Security & Benefits": "financial stability, savings, compensation, and insurance",
     "Learning & Development": "skill building, certifications, training, education programs",
     "Career Growth & Opportunity": "career pathways, internal mobility, leadership pipelines",
@@ -54,7 +54,7 @@ pillar_texts = list(pillars.values())
 pillar_embeddings = model.encode(pillar_texts, convert_to_tensor=True)
 
 # --- 5. Streamlit User Interface ---
-st.title("💡 EVP Bucketing Tool - Smart Version")
+st.title("💡 EVP Bucketing Tool - No Unknowns!")
 st.markdown("**Step 1:** Paste employee comments below (one per line). Then press 'Generate EVP Themes'.")
 
 with st.form("evp_form"):
@@ -86,23 +86,31 @@ if submitted:
                 emerging_indices.append(idx)
 
         # --- 7. BERTopic for Emerging Themes ---
-        if len(emerging_texts) >= 2:
-            topic_model = BERTopic(embedding_model=model, verbose=False)
-            topics, _ = topic_model.fit_transform(emerging_texts)
+        if emerging_texts:
+            try:
+                topic_model = BERTopic(embedding_model=model, verbose=False, low_memory=True, calculate_probabilities=False)
+                topics, _ = topic_model.fit_transform(emerging_texts)
 
-            for idx, (comment, pillar) in enumerate(results):
-                if pillar == "EMERGING":
-                    topic_index = topics.pop(0)
-                    topic_words = topic_model.get_topic(topic_index)
+                topic_mapping = {}
+                for idx, topic_num in enumerate(topics):
+                    topic_words = topic_model.get_topic(topic_num)
                     if topic_words and isinstance(topic_words, list):
-                        new_theme = topic_words[0][0].upper()  # Top keyword as New EVP Pillar
-                        results[idx] = (comment, f"NEW EVP: {new_theme}")
+                        top_word = topic_words[0][0].upper()
+                        topic_mapping[idx] = f"NEW EVP: {top_word}"
                     else:
-                        results[idx] = (comment, "UNKNOWN THEME")
-        else:
-            for idx, (comment, pillar) in enumerate(results):
-                if pillar == "EMERGING":
-                    results[idx] = (comment, "UNKNOWN THEME")  # Fallback label
+                        topic_mapping[idx] = f"NEW EVP: THEME"
+
+                # Update Results
+                for idx, (comment, pillar) in enumerate(results):
+                    if pillar == "EMERGING":
+                        results[idx] = (comment, topic_mapping.get(emerging_indices.pop(0), "NEW EVP: THEME"))
+
+            except Exception as e:
+                # If BERTopic crashes for any reason, fallback
+                for idx, (comment, pillar) in enumerate(results):
+                    if pillar == "EMERGING":
+                        simple_theme = comment.split(' ')[-1].upper()
+                        results[idx] = (comment, f"NEW EVP: {simple_theme}")
 
         # --- 8. Display Results ---
         st.write("### 🔍 Final EVP Theme Mapping Results")
