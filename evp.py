@@ -39,7 +39,7 @@ pillars = {
     "Financial Security & Benefits": "financial stability, savings, compensation, and insurance",
     "Learning & Development": "skill building, certifications, training, education programs",
     "Career Growth & Opportunity": "career pathways, internal mobility, leadership pipelines",
-    "Flexibility & Work-Life Balance": "flexible working, hybrid models, personal autonomy",
+    "Flexibility & Work-Life Balance": "freedom, flexible working, hybrid models, personal autonomy",
     "Diversity, Equity & Inclusion (DEI)": "inclusion, diverse hiring, equitable opportunities",
     "Work Culture & Psychological Safety": "open communication, feedback, respectful culture",
     "CSR & Purpose": "social responsibility, sustainability, impact-driven work",
@@ -54,7 +54,7 @@ pillar_texts = list(pillars.values())
 pillar_embeddings = model.encode(pillar_texts, convert_to_tensor=True)
 
 # --- 5. Streamlit User Interface ---
-st.title("💡 EVP Bucketing Tool")
+st.title("💡 EVP Bucketing Tool - Smart Version")
 st.markdown("**Step 1:** Paste employee comments below (one per line). Then press 'Generate EVP Themes'.")
 
 with st.form("evp_form"):
@@ -68,42 +68,44 @@ if submitted:
         comments = [line.strip() for line in user_input.strip().split('\n') if line.strip()]
         results = []
         emerging_texts = []
+        emerging_indices = []
 
         # --- 6. Match Comments ---
-        for comment in comments:
+        for idx, comment in enumerate(comments):
             comment_embedding = model.encode(comment, convert_to_tensor=True)
             similarities = util.cos_sim(comment_embedding, pillar_embeddings)
             best_pillar_idx = similarities.argmax().item()
             best_pillar = pillar_names[best_pillar_idx]
             confidence = similarities[0][best_pillar_idx].item()
 
-            if confidence > 0.4:
+            if confidence > 0.3:
                 results.append((comment, best_pillar))
             else:
                 results.append((comment, "EMERGING"))
                 emerging_texts.append(comment)
+                emerging_indices.append(idx)
 
         # --- 7. BERTopic for Emerging Themes ---
-        if len(emerging_texts) >= 3:
+        if len(emerging_texts) >= 2:
             topic_model = BERTopic(embedding_model=model, verbose=False)
             topics, _ = topic_model.fit_transform(emerging_texts)
 
-            for i, (comment, pillar) in enumerate(results):
+            for idx, (comment, pillar) in enumerate(results):
                 if pillar == "EMERGING":
                     topic_index = topics.pop(0)
                     topic_words = topic_model.get_topic(topic_index)
                     if topic_words and isinstance(topic_words, list):
-                        new_theme = topic_words[0][0]  # Top keyword
-                        results[i] = (comment, f"EMERGING THEME: {new_theme}")
+                        new_theme = topic_words[0][0].upper()  # Top keyword as New EVP Pillar
+                        results[idx] = (comment, f"NEW EVP: {new_theme}")
                     else:
-                        results[i] = (comment, "UNKNOWN")
+                        results[idx] = (comment, "UNKNOWN THEME")
         else:
-            for i, (comment, pillar) in enumerate(results):
+            for idx, (comment, pillar) in enumerate(results):
                 if pillar == "EMERGING":
-                    results[i] = (comment, "UNKNOWN")  # Fallback label
+                    results[idx] = (comment, "UNKNOWN THEME")  # Fallback label
 
         # --- 8. Display Results ---
-        st.write("### 🔍 EVP Theme Mapping Results")
+        st.write("### 🔍 Final EVP Theme Mapping Results")
         for comment, theme in results:
             st.markdown(f"**📝 {comment}** → _{theme}_")
 
